@@ -1,3 +1,4 @@
+
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.text.style.ReplacementSpan
@@ -44,15 +45,14 @@ class DelimiterReplacementSpan : ReplacementSpan() {
         }
         // if a word is larger than the canvas, then it will be drawn to the full width of the canvas
         // + wrap the part of the word to a new line
-        val isWordBiggerThanCanvas = paint.measureText(nextWord) > canvas.width
+        if (paint.measureText(nextWord) > canvas.width) return
         // measure width of next word
-        val widthOfNextWordOnCanvas = if (isWordBiggerThanCanvas) {
-            x + paint.measureText(text[end + 1].toString()) + paint.measureText(delimiter)
-        } else {
-            x + paint.measureText(nextWord) + paint.measureText(delimiter)
-        }
+        val widthOfNextWordOnCanvas = x + paint.measureText(nextWord) + paint.measureText(delimiter)
+
         // check can we draw the next word on the current line or next word will drawn at start of canvas
-        if (widthOfNextWordOnCanvas <= canvas.width && x != START_OF_CANVAS) {
+        if (widthOfNextWordOnCanvas <= canvas.width && x != START_OF_CANVAS &&
+            (x + paint.measureText(delimiter)) != canvas.width.toFloat()
+        ) {
             canvas.drawText(delimiter, 0, delimiter.length, x, y.toFloat(), paint)
         }
     }
