@@ -9,7 +9,11 @@ import kotlin.math.ceil
  * The delimiter will be drawn only between words,
  * if the delimiter is at the end or start of the line, then it will not be drawn
  */
-class DelimiterReplacementSpan : ReplacementSpan() {
+class DelimiterReplacementSpan(
+    private val textMeasureHelper: TextMeasureHelper
+) : ReplacementSpan() {
+
+    private var delimiterWidth = 0
 
     override fun getSize(
         paint: Paint,
@@ -18,11 +22,57 @@ class DelimiterReplacementSpan : ReplacementSpan() {
         end: Int,
         fontMetrics: Paint.FontMetricsInt?
     ): Int {
+        /**
+         * Measure width of word with delimiter width
+         */
+        fun measureWordWidth(word: CharSequence): Int {
+            return (paint.measureText(word.toString())
+                .toInt() + delimiterWidth) % textMeasureHelper.canvasSize.width
+        }
+
+        /**
+         * Check if (current position (x) + delimiter width + width of word) bigger than width of canvas
+         */
+        fun isWordBiggerThanCanvas(
+            word: CharSequence,
+            delimiterWidth: Int,
+            paint: Paint
+        ): Boolean {
+            return textMeasureHelper.currentX + delimiterWidth + paint.measureText(word.toString())
+                .toInt() > textMeasureHelper.canvasSize.width
+        }
+
+        delimiterWidth = ceil(paint.measureText(text, start, end)).toInt()
+
         if (fontMetrics != null) {
             paint.getFontMetricsInt(fontMetrics)
+            textMeasureHelper.initIfNeed(paint)
+            val word = textMeasureHelper.allWords[textMeasureHelper.delimiterOrder + 1]
+
+            // if delimiter placed at start or end of canvas then we shouldn't draw it
+            val isDelimiterAtStartOrEnd =
+                textMeasureHelper.isDelimiterPlacedInStartOrEndOfCanvas(delimiterWidth)
+            if (isDelimiterAtStartOrEnd) {
+                delimiterWidth = 0
+                textMeasureHelper.currentX =
+                    measureWordWidth(word)
+            } else {
+                if (isWordBiggerThanCanvas(word, delimiterWidth, paint)) {
+                    delimiterWidth = 0
+                    textMeasureHelper.currentX = measureWordWidth(word)
+                } else {
+                    textMeasureHelper.currentX += measureWordWidth(word)
+                }
+            }
+            textMeasureHelper.delimiterOrder++
+            textMeasureHelper.delimiterWidths[start] = delimiterWidth
+            if (isDelimiterAtStartOrEnd) {
+                return 0
+            }
         }
         return ceil(paint.measureText(text, start, end)).toInt()
     }
+
 
     override fun draw(
         canvas: Canvas,
@@ -35,30 +85,8 @@ class DelimiterReplacementSpan : ReplacementSpan() {
         bottom: Int,
         paint: Paint
     ) {
-        val delimiter = text.substring(start, end)
-        val indexOfNextDelimiter = text.indexOf(delimiter, end)
-
-        val nextWord = if (indexOfNextDelimiter == INDEX_OF_NONE_EXISTING_DELIMITER) {
-            text.substring(end, text.length)
-        } else {
-            text.substring(end, indexOfNextDelimiter)
+        if ((textMeasureHelper.delimiterWidths[start] ?: 0) > 0) {
+            canvas.drawText(text, start, end, x, y.toFloat(), paint)
         }
-        // if a word is larger than the canvas, then it will be drawn to the full width of the canvas
-        // + wrap the part of the word to a new line
-        if (paint.measureText(nextWord) > canvas.width) return
-        // measure width of next word
-        val widthOfNextWordOnCanvas = x + paint.measureText(nextWord) + paint.measureText(delimiter)
-
-        // check can we draw the next word on the current line or next word will drawn at start of canvas
-        if (widthOfNextWordOnCanvas <= canvas.width && x != START_OF_CANVAS &&
-            (x + paint.measureText(delimiter)) != canvas.width.toFloat()
-        ) {
-            canvas.drawText(delimiter, 0, delimiter.length, x, y.toFloat(), paint)
-        }
-    }
-
-    companion object {
-        private const val INDEX_OF_NONE_EXISTING_DELIMITER = -1
-        private const val START_OF_CANVAS = 0.0f
     }
 }
