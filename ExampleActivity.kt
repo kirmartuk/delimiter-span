@@ -10,7 +10,7 @@ import ru.yandex.spannabletest.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
-    
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -19,8 +19,8 @@ class MainActivity : AppCompatActivity() {
         val delimiter = " • "
 
         val words = listOf(
-            "1aaaaaaaaaaaaaaaaaaaaaaaaaaa1",
-            "1bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb 1",
+            "1aaaaaaaaaaaaaa1",
+            "1bbbbbbb 1",
             "1cc1",
             "1dd1",
             "1ffffffffff1",
@@ -30,7 +30,7 @@ class MainActivity : AppCompatActivity() {
             "1xxxxxxx1",
             "1ddddd1",
             "1dddddd1",
-            "1ddddd1",
+            "1dddddddddddddddd1",
             "1ddddddd1",
         )
 
