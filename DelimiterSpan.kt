@@ -24,6 +24,7 @@ class DelimiterReplacementSpan(
     ): Int {
         delimiterWidth = ceil(paint.measureText(text, start, end)).toInt()
         if (fontMetrics != null) {
+            textMeasureHelper.executeCount++
             paint.getFontMetricsInt(fontMetrics)
 
             textMeasureHelper.initIfNeed(
@@ -32,7 +33,10 @@ class DelimiterReplacementSpan(
                 ).toInt()
             )
 
-            val word = textMeasureHelper.allWords[textMeasureHelper.delimiterOrder + 1]
+            val word =
+                textMeasureHelper.allWords.getOrNull(textMeasureHelper.delimiterOrder + 1)
+                    ?: return delimiterWidth
+
             val isDelimiterAtStartOrEnd =
                 textMeasureHelper.isDelimiterPlacedInStartOrEndOfCanvas(delimiterWidth)
 
