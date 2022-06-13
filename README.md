@@ -1,5 +1,8 @@
 # delimiter-span
-Span with "smart" delimiter drawing 
+>DelimiterReplacementSpan - with "smart" drawing of the separator between words.
+The delimiter will be drawn only between words,
+if the delimiter is at the end or start of the line, then it will not be drawn
+
 Examples:
 
 <img src="https://github.com/kirmartuk/delimiter-span/blob/main/Screenshot_1655131437.png" height="500" />
