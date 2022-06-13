@@ -25,17 +25,20 @@ class MainActivity : AppCompatActivity() {
             "1dd1",
             "1ffffffffff1",
             "1eeeee1",
-            "1qqqqqqqqqqq1",
+            "1qqqqqqqq1",
             "1zzzzzzz1",
             "1xxxxxxx1",
             "1ddddd1",
             "1dddddd1",
-            "1dddddddddddddddd1",
+            "1ddddddddd1",
             "1ddddddd1",
         )
 
         binding.title.doOnPreDraw {
-            (it as TextView).text = setupSpans(words, delimiter, CanvasSize(it.width, it.height))
+            (it as TextView).setText(
+                setupSpans(words, delimiter, CanvasSize(it.width, it.height)),
+                TextView.BufferType.SPANNABLE
+            )
         }
     }
 
