@@ -1,4 +1,3 @@
-
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.text.style.ReplacementSpan
@@ -13,8 +12,6 @@ class DelimiterReplacementSpan(
     private val textMeasureHelper: TextMeasureHelper
 ) : ReplacementSpan() {
 
-    private var delimiterWidth = 0
-
     override fun getSize(
         paint: Paint,
         text: CharSequence,
@@ -22,57 +19,44 @@ class DelimiterReplacementSpan(
         end: Int,
         fontMetrics: Paint.FontMetricsInt?
     ): Int {
-        /**
-         * Measure width of word with delimiter width
-         */
-        fun measureWordWidth(word: CharSequence): Int {
-            return (paint.measureText(word.toString())
-                .toInt() + delimiterWidth) % textMeasureHelper.canvasSize.width
-        }
-
-        /**
-         * Check if (current position (x) + delimiter width + width of word) bigger than width of canvas
-         */
-        fun isWordBiggerThanCanvas(
-            word: CharSequence,
-            delimiterWidth: Int,
-            paint: Paint
-        ): Boolean {
-            return textMeasureHelper.currentX + delimiterWidth + paint.measureText(word.toString())
-                .toInt() > textMeasureHelper.canvasSize.width
-        }
-
-        delimiterWidth = ceil(paint.measureText(text, start, end)).toInt()
-
+        var delimiterWidth = ceil(paint.measureText(text, start, end)).toInt()
         if (fontMetrics != null) {
             paint.getFontMetricsInt(fontMetrics)
-            textMeasureHelper.initIfNeed(paint)
-            val word = textMeasureHelper.allWords[textMeasureHelper.delimiterOrder + 1]
 
-            // if delimiter placed at start or end of canvas then we shouldn't draw it
+            textMeasureHelper.initIfNeed(
+                paint.measureText(textMeasureHelper.allWords.first().toString()).toInt()
+            )
+
+            val word = textMeasureHelper.allWords[textMeasureHelper.delimiterOrder + 1]
             val isDelimiterAtStartOrEnd =
                 textMeasureHelper.isDelimiterPlacedInStartOrEndOfCanvas(delimiterWidth)
+
             if (isDelimiterAtStartOrEnd) {
                 delimiterWidth = 0
                 textMeasureHelper.currentX =
-                    measureWordWidth(word)
+                    paint.measureTexWithDelimiterWidth(word, delimiterWidth)
             } else {
-                if (isWordBiggerThanCanvas(word, delimiterWidth, paint)) {
+                if (paint.isTextBiggerThanCanvas(word, delimiterWidth)) {
                     delimiterWidth = 0
-                    textMeasureHelper.currentX = measureWordWidth(word)
+                    textMeasureHelper.currentX = paint.measureBigText(word)
                 } else {
-                    textMeasureHelper.currentX += measureWordWidth(word)
+                    textMeasureHelper.currentX += paint.measureTexWithDelimiterWidth(
+                        word,
+                        delimiterWidth
+                    )
                 }
             }
+
             textMeasureHelper.delimiterOrder++
             textMeasureHelper.delimiterWidths[start] = delimiterWidth
+
+            // if delimiter placed at start or end of canvas then we shouldn't draw it
             if (isDelimiterAtStartOrEnd) {
                 return 0
             }
         }
         return ceil(paint.measureText(text, start, end)).toInt()
     }
-
 
     override fun draw(
         canvas: Canvas,
@@ -85,8 +69,45 @@ class DelimiterReplacementSpan(
         bottom: Int,
         paint: Paint
     ) {
-        if ((textMeasureHelper.delimiterWidths[start] ?: 0) > 0) {
+        if (textMeasureHelper.delimiterWidths[start] != 0) {
             canvas.drawText(text, start, end, x, y.toFloat(), paint)
         }
+    }
+
+    private fun Paint.measureTexWithDelimiterWidth(text: CharSequence, delimiterWidth: Int): Int {
+        return (this.measureText(
+            text.toString()
+        ).toInt() + delimiterWidth) % textMeasureHelper.canvasSize.width
+    }
+
+    private fun Paint.measureBigText(word: CharSequence): Int {
+        val canvasWidth = textMeasureHelper.canvasSize.width
+        if (this.measureText(word.toString()) <= canvasWidth) {
+            return this.measureText(word.toString()).toInt()
+        }
+        var tmpWidth = 0
+        for (char in word) {
+            val measuredWidthOfChar = this.measureText(
+                char.toString()
+            ).toInt()
+            if (tmpWidth + measuredWidthOfChar > canvasWidth) {
+                tmpWidth = measuredWidthOfChar
+            } else {
+                tmpWidth += measuredWidthOfChar
+            }
+        }
+        return tmpWidth
+    }
+
+    /**
+     * Check if (current position (x) + delimiter width + width of word) bigger than width of canvas
+     */
+    private fun Paint.isTextBiggerThanCanvas(
+        text: CharSequence,
+        delimiterWidth: Int,
+    ): Boolean {
+        return textMeasureHelper.currentX + delimiterWidth + this.measureText(
+            text.toString(),
+        ) >= textMeasureHelper.canvasSize.width
     }
 }
