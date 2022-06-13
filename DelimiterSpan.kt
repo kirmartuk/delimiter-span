@@ -1,3 +1,4 @@
+
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.text.style.ReplacementSpan
@@ -12,6 +13,8 @@ class DelimiterReplacementSpan(
     private val textMeasureHelper: TextMeasureHelper
 ) : ReplacementSpan() {
 
+    private var delimiterWidth = 0
+
     override fun getSize(
         paint: Paint,
         text: CharSequence,
@@ -19,12 +22,14 @@ class DelimiterReplacementSpan(
         end: Int,
         fontMetrics: Paint.FontMetricsInt?
     ): Int {
-        var delimiterWidth = ceil(paint.measureText(text, start, end)).toInt()
+        delimiterWidth = ceil(paint.measureText(text, start, end)).toInt()
         if (fontMetrics != null) {
             paint.getFontMetricsInt(fontMetrics)
 
             textMeasureHelper.initIfNeed(
-                paint.measureText(textMeasureHelper.allWords.first().toString()).toInt()
+                paint.measureText(
+                    textMeasureHelper.allWords.first().toString()
+                ).toInt()
             )
 
             val word = textMeasureHelper.allWords[textMeasureHelper.delimiterOrder + 1]
@@ -49,8 +54,6 @@ class DelimiterReplacementSpan(
 
             textMeasureHelper.delimiterOrder++
             textMeasureHelper.delimiterWidths[start] = delimiterWidth
-
-            // if delimiter placed at start or end of canvas then we shouldn't draw it
             if (isDelimiterAtStartOrEnd) {
                 return 0
             }
@@ -108,6 +111,6 @@ class DelimiterReplacementSpan(
     ): Boolean {
         return textMeasureHelper.currentX + delimiterWidth + this.measureText(
             text.toString(),
-        ) >= textMeasureHelper.canvasSize.width
+        ) > textMeasureHelper.canvasSize.width
     }
 }
